@@ -1,4 +1,4 @@
-// redis-item-data-fetcher.ts - Refactored Version
+// redis-item-data-fetcher.ts - Refactored Version with Stock Filtering
 import {NextApiRequest, NextApiResponse} from 'next';
 import {redisConnection} from '@/app/hooks/API/redis_connection.ts';
 import RedisDataFetcher from '@/app/hooks/API/RedisDataFetcher.ts';
@@ -48,6 +48,39 @@ const isRedisKeyValueObject = (item: any): item is RedisKeyValueObject => {
 
 const parsePriceItem = (data: string): PriceItem => {
     return JSON.parse(data);
+};
+
+// Extract ratio from Note field and calculate required stack size
+const extractRatioAndRequiredStack = (note: string): { ratio: number | null, requiredStack: number | null } => {
+    try {
+        // Match patterns like "~price 1/26 divine", "1/26 divine", "~b/o 1/10 chaos", etc.
+        const ratioMatch = note.match(/(\d+)\/(\d+)/);
+        if (ratioMatch) {
+            const numerator = parseInt(ratioMatch[1]);
+            const denominator = parseInt(ratioMatch[2]);
+            const ratio = numerator / denominator;
+
+            // The required stack size is the denominator (the amount being sold)
+            return {ratio, requiredStack: denominator};
+        }
+        return {ratio: null, requiredStack: null};
+    } catch (error) {
+        console.error('Error extracting ratio from note:', note, error);
+        return {ratio: null, requiredStack: null};
+    }
+};
+
+// Check if item has sufficient stock
+const hasSufficientStock = (note: string, stackSize: number): boolean => {
+    const {requiredStack} = extractRatioAndRequiredStack(note);
+
+    // If we can't parse the ratio, assume the item is valid
+    if (requiredStack === null) {
+        return true;
+    }
+
+    // Check if available stack size meets or exceeds the required amount
+    return stackSize >= requiredStack;
 };
 
 // Process a single key-value pair from the RedisKeyValueObject
@@ -142,9 +175,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const processedData = processItemData(itemTypesWithMetadata as RawRedisData);
         const oneDayAgo = new Date();
         oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        // Filter by league
+
+        // Filter by league AND sufficient stock
         const filteredData = processedData.filter((item: ProcessedItem) => {
-            return item.League === league && new Date(item.LastUpdated) >= oneDayAgo;
+            const isRecent = new Date(item.LastUpdated) >= oneDayAgo;
+            const hasStock = hasSufficientStock(item.Note, item.StackSize);
+            const isCorrectLeague = item.League === league;
+
+            return isRecent && hasStock && isCorrectLeague;
         });
 
         res.status(200).json({
