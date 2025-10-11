@@ -107,24 +107,45 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
 
         // Return a sorted copy of the array
         return [...essenceTrades].sort((a, b) => {
-            // Extract ratio from note field
-            const extractRatio = (note: string) => {
-                const match = note.match(/~price\s+(\d+)\/(\d+)\s+(Divine|Chaos)/);
-                if (match) {
-                    const numerator = parseInt(match[1]);
-                    const denominator = parseInt(match[2]);
+            // Extract price per unit from note field
+            const extractPricePerUnit = (note: string) => {
+                if (!note) return Infinity;
+
+                // Handle ~price 49/10 divine format (case insensitive)
+                const priceFractionMatch = note.match(/~price\s+(\d+)\/(\d+)\s+(divine|chaos)/i);
+                if (priceFractionMatch) {
+                    const numerator = parseInt(priceFractionMatch[1]);
+                    const denominator = parseInt(priceFractionMatch[2]);
                     return numerator / denominator;
                 }
-                return 0;
+
+                // Handle ~b/o 1/21 divine format (case insensitive) - NEW PATTERN
+                const boFractionMatch = note.match(/~b\/o\s+(\d+)\/(\d+)\s+(divine|chaos)/i);
+                if (boFractionMatch) {
+                    const numerator = parseInt(boFractionMatch[1]);
+                    const denominator = parseInt(boFractionMatch[2]);
+                    return numerator / denominator;
+                }
+
+                // Handle ~price 8 divine format (case insensitive)
+                const priceSingleMatch = note.match(/~price\s+(\d+)\s+(divine|chaos)/i);
+                if (priceSingleMatch) {
+                    return parseInt(priceSingleMatch[1]);
+                }
+
+                // Handle ~b/o 20 divine format (case insensitive)
+                const boSingleMatch = note.match(/~b\/o\s+(\d+)\s+(divine|chaos)/i);
+                if (boSingleMatch) {
+                    return parseInt(boSingleMatch[1]);
+                }
+
+                return Infinity;
             };
 
-            const ratioA = extractRatio(a.note || '');
-            const ratioB = extractRatio(b.note || '');
+            const priceA = extractPricePerUnit(a.note || '');
+            const priceB = extractPricePerUnit(b.note || '');
 
-            if (currency === 'Divine') {
-                return ratioB - ratioA; // Higher ratios first for Divine
-            }
-            return ratioA - ratioB; // Lower ratios first for Chaos
+            return priceA - priceB;
         });
     };
 
@@ -136,14 +157,38 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         return allTimes.length > 0 ? Math.max(...allTimes) : null;
     };
 
-    // Extract price ratio from note for display
+// Extract price ratio from note for display
     const extractPriceRatio = (note: string) => {
-        const match = note.match(/~price\s+(\d+)\/(\d+)\s+(Divine|Chaos)/);
-        if (match) {
-            const numerator = parseInt(match[1]);
-            const denominator = parseInt(match[2]);
+        if (!note) return 'N/A';
+
+        // Handle ~price 49/10 divine format (case insensitive)
+        const priceFractionMatch = note.match(/~price\s+(\d+)\/(\d+)\s+(divine|chaos)/i);
+        if (priceFractionMatch) {
+            const numerator = parseInt(priceFractionMatch[1]);
+            const denominator = parseInt(priceFractionMatch[2]);
             return `${numerator}/${denominator}`;
         }
+
+        // Handle ~b/o 1/21 divine format (case insensitive) - NEW PATTERN
+        const boFractionMatch = note.match(/~b\/o\s+(\d+)\/(\d+)\s+(divine|chaos)/i);
+        if (boFractionMatch) {
+            const numerator = parseInt(boFractionMatch[1]);
+            const denominator = parseInt(boFractionMatch[2]);
+            return `${numerator}/${denominator}`;
+        }
+
+        // Handle ~price 8 divine format (case insensitive)
+        const priceSingleMatch = note.match(/~price\s+(\d+)\s+(divine|chaos)/i);
+        if (priceSingleMatch) {
+            return `${priceSingleMatch[1]}/1`;
+        }
+
+        // Handle ~b/o 20 divine format (case insensitive)
+        const boSingleMatch = note.match(/~b\/o\s+(\d+)\s+(divine|chaos)/i);
+        if (boSingleMatch) {
+            return `${boSingleMatch[1]}/1`;
+        }
+
         return 'N/A';
     };
 
