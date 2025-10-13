@@ -9,6 +9,7 @@ export interface ProcessedTrade {
     baseType: string;
     typeLine: string;
     indexed?: Date;
+    id?: string;
 }
 
 export interface redisStashTradeResult {
@@ -29,10 +30,45 @@ interface TradeStore {
 interface ApiResponse {
     item: string;
     currency: string;
-    data: any[]; // This contains your actual trade data
+    data: ProcessedTradeData[];
     lastUpdated: string;
     count: number;
 }
+
+interface ProcessedTradeData {
+    League: string;
+    Note: string;
+    StackSize: number;
+    AccountName: string;
+    LastUpdated: string;
+    BaseType: string;
+    TypeLine: string;
+    id?: string;
+}
+
+// Type guard to check if data matches ProcessedTradeData structure
+const isProcessedTradeData = (data: unknown): data is ProcessedTradeData => {
+    if (typeof data !== 'object' || data === null) {
+        return false;
+    }
+
+    const obj = data as Record<string, unknown>;
+    return (
+        typeof obj.League === 'string' &&
+        typeof obj.Note === 'string' &&
+        typeof obj.StackSize === 'number' &&
+        typeof obj.AccountName === 'string' &&
+        typeof obj.LastUpdated === 'string' &&
+        typeof obj.BaseType === 'string' &&
+        typeof obj.TypeLine === 'string' &&
+        (obj.id === undefined || typeof obj.id === 'string')
+    );
+};
+
+// Type guard to check if data is an array of ProcessedTradeData
+const isProcessedTradeDataArray = (data: unknown): data is ProcessedTradeData[] => {
+    return Array.isArray(data) && data.every(isProcessedTradeData);
+};
 
 // Renamed to match the file name and purpose
 export default function useItemSalesData(itemType: string, itemCurrency: string, leagueName: string) {
@@ -57,7 +93,23 @@ export default function useItemSalesData(itemType: string, itemCurrency: string,
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            return await response.json();
+            const data: unknown = await response.json();
+
+            // Validate the response structure
+            if (typeof data === 'object' && data !== null) {
+                const responseData = data as Record<string, unknown>;
+                if (
+                    typeof responseData.item === 'string' &&
+                    typeof responseData.currency === 'string' &&
+                    typeof responseData.lastUpdated === 'string' &&
+                    typeof responseData.count === 'number' &&
+                    isProcessedTradeDataArray(responseData.data)
+                ) {
+                    return data as ApiResponse;
+                }
+            }
+
+            throw new Error('Invalid API response structure');
         } catch (error) {
             console.error('Error fetching item data:', error);
             throw error;
@@ -81,8 +133,8 @@ export default function useItemSalesData(itemType: string, itemCurrency: string,
             const tradesData = responseData.data;
 
             // If data is an array of trades, categorize them
-            if (Array.isArray(tradesData)) {
-                const trades: ProcessedTrade[] = tradesData.map((trade: any) => ({
+            if (isProcessedTradeDataArray(tradesData)) {
+                const trades: ProcessedTrade[] = tradesData.map((trade: ProcessedTradeData) => ({
                     league: trade.League,
                     note: trade.Note,
                     stackSize: trade.StackSize,
@@ -90,7 +142,6 @@ export default function useItemSalesData(itemType: string, itemCurrency: string,
                     lastUpdated: new Date(trade.LastUpdated),
                     baseType: trade.BaseType,
                     typeLine: trade.TypeLine,
-                    // Add id if needed
                     id: trade.id,
                 }));
 

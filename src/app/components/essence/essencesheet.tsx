@@ -3,6 +3,8 @@ import {useEffect, useMemo, useState} from 'react';
 import ChaosDivineToggleButtonWithImage from "../ChaosDivineToggleButton.tsx";
 import useItemSalesData from '../../hooks/API/getItemSalesData.ts';
 import {EssenceImage} from "@/app/components/essence/EssenceImage.tsx";
+// Import the actual League type from the hook
+import type {League} from '../../hooks/API/getLeagueData.ts';
 import useLeagueData from '../../hooks/API/getLeagueData.ts';
 
 const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void }) => {
@@ -11,7 +13,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
     const [expandedEssences, setExpandedEssences] = useState<Record<string, boolean>>({});
     const [selectedEssenceType, setSelectedEssenceType] = useState<string>('');
     const [debugMode, setDebugMode] = useState(false);
-    const [leagues, setLeagues] = useState<any[]>([]);
+    const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState('Mercenaries');
 
     // Get league data
@@ -50,7 +52,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         }));
     };
 
-    const formatTimeAgo = (date: Date | string | null) => {
+    const formatTimeAgo = (date: Date | string | null): string => {
         if (!date) return 'Just now';
         const dateObj = date instanceof Date ? date : new Date(date);
         if (isNaN(dateObj.getTime())) return 'Just now';
@@ -80,7 +82,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         // Get all unique essence names from trades
         const essenceNames = [...new Set(
             trades.map(trade => trade.typeLine)
-        )].filter(Boolean);
+        )].filter((name): name is string => Boolean(name));
 
         console.info('essenceNames', essenceNames);
 
@@ -108,7 +110,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         // Return a sorted copy of the array
         return [...essenceTrades].sort((a, b) => {
             // Extract price per unit from note field
-            const extractPricePerUnit = (note: string) => {
+            const extractPricePerUnit = (note: string): number => {
                 if (!note) return Infinity;
 
                 // Handle ~price 49/10 divine format (case insensitive)
@@ -149,7 +151,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         });
     };
 
-    const getLatestBatchTime = () => {
+    const getLatestBatchTime = (): number | null => {
         const trades = currency === 'Divine' ? divineTrades : chaosTrades;
         if (trades.length === 0) return null;
 
@@ -157,8 +159,8 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         return allTimes.length > 0 ? Math.max(...allTimes) : null;
     };
 
-// Extract price ratio from note for display
-    const extractPriceRatio = (note: string) => {
+    // Extract price ratio from note for display
+    const extractPriceRatio = (note: string): string => {
         if (!note) return 'N/A';
 
         // Handle ~price 49/10 divine format (case insensitive)

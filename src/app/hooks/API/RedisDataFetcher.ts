@@ -1,6 +1,15 @@
 // RedisDataFetcher.ts - COMPLETE VERSION
 import {RedisConnection} from '@/app/hooks/API/redis_connection.ts';
-import {essenceImages} from "@/app/components/essence/essenceImages.tsx";
+
+interface ItemData {
+    [key: string]: string;
+}
+
+interface LeagueObject {
+    id: string;
+
+    [key: string]: unknown;
+}
 
 export default class RedisDataFetcher {
     private redisConnection: RedisConnection;
@@ -17,8 +26,7 @@ export default class RedisDataFetcher {
         await this.ensureConnection();
         try {
             const client = this.redisConnection.getClient();
-            const values = await client.sMembers('item:types');
-            return values;
+            return await client.sMembers('item:types');
         } catch (error) {
             console.error('Error fetching item:types set:', error);
             throw error;
@@ -49,20 +57,19 @@ export default class RedisDataFetcher {
      * @param currencyType
      * @returns {Promise<Array>} Array of objects containing item type and its metadata
      */
-    async getItemTypesWithMetadataFromHash(itemType: string, currencyType: string): Promise<any[]> {
+    async getItemTypesWithMetadataFromHash(itemType: string, currencyType: string): Promise<{
+        itemName: string;
+        itemData: ItemData
+    }[]> {
         await this.ensureConnection();
         try {
             // Get all item types with metadata
             let {values} = await this.getItemTypesWithMetadata();
-            let itemTypeNames: string[];
-            if (itemType.includes('essence')) {
-                itemTypeNames = Object.keys(essenceImages);
-            }
 
             values = values.filter(value => value.includes('type:' + itemType));
 
             // Create an array to store all the results
-            const results = [];
+            const results: { itemName: string; itemData: ItemData }[] = [];
 
             // For each item type, fetch its metadata from Redis hash
             for (const itemName of values) {
@@ -86,7 +93,7 @@ export default class RedisDataFetcher {
      * Fetch all leagues from Redis FlippingExilesPublicStashAPI.LeagueNames storage
      * @returns {Promise<Array>} Array of league objects
      */
-    async getLeaguesFromHash(): Promise<any[]> {
+    async getLeaguesFromHash(): Promise<LeagueObject[]> {
         await this.ensureConnection();
         try {
             const client = this.redisConnection.getClient();
@@ -97,7 +104,16 @@ export default class RedisDataFetcher {
             }
 
             // Parse the JSON string to get an array of league objects
-            return JSON.parse(leaguesString);
+            const leagues: unknown = JSON.parse(leaguesString);
+
+            // Validate that it's an array of league objects
+            if (Array.isArray(leagues) && leagues.every(league =>
+                typeof league === 'object' && league !== null && 'Id' in league
+            )) {
+                return leagues as LeagueObject[];
+            }
+
+            throw new Error('Invalid league data structure');
         } catch (error) {
             console.error('Error fetching leagues from Redis:', error);
             throw error;
@@ -150,7 +166,7 @@ export default class RedisDataFetcher {
                     console.log('Attempting to reconnect...');
                     // Wait before retry
                     await new Promise(resolve => setTimeout(resolve, 1000));
-                    continue;
+
                 }
             }
         }
@@ -161,7 +177,11 @@ export default class RedisDataFetcher {
     /**
      * Check if error is connection-related
      */
-    private isConnectionError(error: any): boolean {
+    private isConnectionError(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
         const errorMessage = error.message.toLowerCase();
         return errorMessage.includes('closed') ||
             errorMessage.includes('not connected') ||

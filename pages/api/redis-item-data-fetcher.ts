@@ -26,7 +26,7 @@ interface ItemWithDataProperty {
     itemData: RedisKeyValueObject;
 }
 
-interface RedisArrayItem extends Array<any> {
+interface RedisArrayItem extends Array<unknown> {
     0: string; // id
     1: string | RedisKeyValueObject; // data can be JSON string or key-value object
 }
@@ -34,16 +34,26 @@ interface RedisArrayItem extends Array<any> {
 type RawRedisData = (ItemWithDataProperty | RedisArrayItem | RedisKeyValueObject | null)[];
 
 // Helper functions for type guards and parsing
-const isItemWithDataProperty = (item: any): item is ItemWithDataProperty => {
+const isItemWithDataProperty = (item: unknown): item is ItemWithDataProperty => {
     return typeof item === 'object' && item !== null && 'itemData' in item;
 };
 
-const isRedisArrayItem = (item: any): item is RedisArrayItem => {
-    return Array.isArray(item) && item.length >= 2;
+const isRedisArrayItem = (item: unknown): item is RedisArrayItem => {
+    return Array.isArray(item) && item.length >= 2 && typeof item[0] === 'string';
 };
 
-const isRedisKeyValueObject = (item: any): item is RedisKeyValueObject => {
-    return typeof item === 'object' && item !== null && !Array.isArray(item);
+const isRedisKeyValueObject = (item: unknown): item is RedisKeyValueObject => {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+        return false;
+    }
+
+    // Check if all values are strings
+    const obj = item as Record<string, unknown>;
+    return Object.values(obj).every(value => typeof value === 'string');
+};
+
+const isString = (value: unknown): value is string => {
+    return typeof value === 'string';
 };
 
 const parsePriceItem = (data: string): PriceItem => {
@@ -127,7 +137,7 @@ const processItemData = (rawData: RawRedisData): ProcessedItem[] => {
                 // Handle array structure [id, data]
                 const [rawId, rawData] = item;
 
-                if (typeof rawData === 'string') {
+                if (isString(rawData)) {
                     // If data is a JSON string, parse it as a single item
                     const processedItem = processKeyValuePair(rawId, rawData, index);
                     if (processedItem) results.push(processedItem);

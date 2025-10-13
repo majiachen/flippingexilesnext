@@ -2,7 +2,15 @@
 import {NextApiRequest, NextApiResponse} from 'next';
 import {redisConnection} from '@/app/hooks/API/redis_connection.ts';
 import RedisDataFetcher from '@/app/hooks/API/RedisDataFetcher.ts';
-import type {League} from '@/app/hooks/API/getLeagueData.ts';
+
+// Use the same interface that RedisDataFetcher uses
+interface LeagueObject {
+    id: string;
+    Name?: string;
+    Rules?: Array<{ Id: string; [key: string]: unknown }>;
+
+    [key: string]: unknown;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -13,8 +21,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const fetcher = new RedisDataFetcher(redisConnection);
         const leagues = await fetcher.getLeaguesFromHash();
 
-        const filteredLeagues = leagues.filter((league: League) => {
-            return !league.Rules?.some((rule: { Id: string; }) => rule.Id === 'NoParties');
+        const filteredLeagues = leagues.filter((league: LeagueObject) => {
+            return !league.Rules?.some((rule: { Id: string; [key: string]: unknown }) => rule.Id === 'NoParties');
         });
 
         res.status(200).json({
