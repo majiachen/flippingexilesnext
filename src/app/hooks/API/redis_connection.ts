@@ -152,4 +152,5 @@ const redisHost = process.env.REDIS_HOST;
 const redisPort = process.env.REDIS_PORT;
 
 const fullUrl = `redis://:${redisPassword}@${redisHost}:${redisPort}`;
+console.log('Redis Client Connected:', fullUrl);
 export const redisConnection = new RedisConnection(fullUrl);
