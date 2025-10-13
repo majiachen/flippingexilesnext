@@ -6,7 +6,6 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY next.config.js ./
-COPY .env ./
 
 # Install dependencies
 RUN npm ci
