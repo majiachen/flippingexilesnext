@@ -1,33 +1,20 @@
-FROM node:18-alpine AS builder
-
+FROM node:18-alpine
 WORKDIR /app
 
-# Copy configuration files first
+# Copy package files
 COPY package*.json ./
-COPY tsconfig.json ./
-COPY next.config.js ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies) for build
 RUN npm ci
 
-# Copy ALL source files
+# Copy source code
 COPY . .
-
-# Verify the file exists in Docker context
-RUN find . -name "RedisDataFetcher.ts" -type f
 
 # Build the application
 RUN npm run build
 
-FROM node:18-alpine AS runner
-WORKDIR /app
-
-# Copy necessary files for production
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
+# Install only production dependencies after build
+RUN npm ci --only=production
 
 EXPOSE 3000
 CMD ["npm", "start"]
