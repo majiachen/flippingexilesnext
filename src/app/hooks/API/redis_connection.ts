@@ -8,6 +8,7 @@ export class RedisConnection {
     private connectionUrl: string;
 
     constructor(url: string) {
+        console.log('Redis Client Connected:', fullUrl);
         this.connectionUrl = url;
         this.client = createClient({url}) as RedisClientType;
 
@@ -152,5 +153,5 @@ const redisHost = process.env.REDIS_HOST;
 const redisPort = process.env.REDIS_PORT;
 
 const fullUrl = `redis://:${redisPassword}@${redisHost}:${redisPort}`;
-console.log('Redis Client Connected:', fullUrl);
+
 export const redisConnection = new RedisConnection(fullUrl);

@@ -1,7 +1,7 @@
 // redis-league-data-fetcher.ts - Updated
 import {NextApiRequest, NextApiResponse} from 'next';
 import {redisConnection} from '@/app/hooks/API/redis_connection';
-import RedisDataFetcher from '../app/hooks/API/RedisDataFetcher';
+import RedisDataFetcher from '../hooks/API/RedisDataFetcher';
 
 // Use the same interface that RedisDataFetcher uses
 interface LeagueObject {
