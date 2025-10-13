@@ -1,7 +1,7 @@
 // redis-item-data-fetcher.ts - Refactored Version with Stock Filtering
 import {NextApiRequest, NextApiResponse} from 'next';
-import {redisConnection} from '@/app/hooks/API/redis_connection.ts';
-import RedisDataFetcher from '@/app/hooks/API/RedisDataFetcher.ts';
+import {redisConnection} from '@/app/hooks/API/redis_connection';
+import RedisDataFetcher from '@/app/hooks/API/RedisDataFetcher';
 
 // Define TypeScript interfaces
 interface PriceItem {

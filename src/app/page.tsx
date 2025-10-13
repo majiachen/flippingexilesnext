@@ -1,4 +1,4 @@
-import CurrencyCalculator from "@/app/components/CurrencyCalculatorLayout.tsx";
+import CurrencyCalculator from "@/app/components/CurrencyCalculatorLayout";
 
 export default function Home() {
     return (

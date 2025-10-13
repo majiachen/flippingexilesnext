@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import {essenceImages, FALLBACK_ESSENCE_IMAGE} from './essenceImages.tsx';
+import {essenceImages, FALLBACK_ESSENCE_IMAGE} from './essenceImages';
 
 interface EssenceImageProps {
     essenceName: string;

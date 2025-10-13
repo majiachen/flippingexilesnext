@@ -1,6 +1,6 @@
 "use client";
 import {useState} from 'react';
-import EssenceCalculator from './essence/essencesheet.tsx';
+import EssenceCalculator from './essence/essencesheet';
 
 export default function CurrencyCalculator() {
     const [currentPage, setCurrentPage] = useState<'essences' | 'fossils'>('essences');

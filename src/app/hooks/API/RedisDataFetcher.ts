@@ -1,5 +1,5 @@
 // RedisDataFetcher.ts - COMPLETE VERSION
-import {RedisConnection} from '@/app/hooks/API/redis_connection.ts';
+import {RedisConnection} from '@/app/hooks/API/redis_connection';
 
 interface ItemData {
     [key: string]: string;

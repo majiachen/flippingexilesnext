@@ -1,11 +1,11 @@
 "use client";
 import {useEffect, useMemo, useState} from 'react';
-import ChaosDivineToggleButtonWithImage from "../ChaosDivineToggleButton.tsx";
-import useItemSalesData from '../../hooks/API/getItemSalesData.ts';
-import {EssenceImage} from "@/app/components/essence/EssenceImage.tsx";
+import ChaosDivineToggleButtonWithImage from "../ChaosDivineToggleButton";
+import useItemSalesData from '../../hooks/API/getItemSalesData';
+import {EssenceImage} from "@/app/components/essence/EssenceImage";
 // Import the actual League type from the hook
-import type {League} from '../../hooks/API/getLeagueData.ts';
-import useLeagueData from '../../hooks/API/getLeagueData.ts';
+import type {League} from '../../hooks/API/getLeagueData';
+import useLeagueData from '../../hooks/API/getLeagueData';
 
 const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void }) => {
     console.log('⚠️ COMPONENT FUNCTION EXECUTING ⚠️');
