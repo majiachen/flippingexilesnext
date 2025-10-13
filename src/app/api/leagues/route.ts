@@ -1,7 +1,6 @@
 // route.ts - Updated
 import {redisConnection} from '@/app/hooks/API/redis_connection';
 import RedisDataFetcher from '../../hooks/API/RedisDataFetcher';
-import {NextRequest} from "next/server";
 
 // Use the same interface that RedisDataFetcher uses
 interface LeagueObject {
@@ -12,7 +11,7 @@ interface LeagueObject {
     [key: string]: unknown;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const fetcher = new RedisDataFetcher(redisConnection);
         const leagues = await fetcher.getLeaguesFromHash();

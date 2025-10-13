@@ -3,46 +3,49 @@ import {createClient, RedisClientType} from 'redis';
 
 // Mock client for build time
 class MockRedisClient {
-    async connect() {
+    async connect(): Promise<void> {
         console.log('Mock Redis: connect called');
     }
 
-    async disconnect() {
+    async disconnect(): Promise<void> {
         console.log('Mock Redis: disconnect called');
     }
 
-    async hGetAll() {
-        console.log('Mock Redis: hGetAll called');
+    async hGetAll(key: string): Promise<Record<string, string>> {
+        console.log('Mock Redis: hGetAll called for key:', key);
         return {};
     }
 
-    async hGet() {
-        console.log('Mock Redis: hGet called');
+    async hGet(key: string, field: string): Promise<string | null> {
+        console.log('Mock Redis: hGet called for key:', key, 'field:', field);
         return null;
     }
 
-    async keys() {
-        console.log('Mock Redis: keys called');
+    async keys(pattern: string): Promise<string[]> {
+        console.log('Mock Redis: keys called with pattern:', pattern);
         return [];
     }
 
-    async get() {
-        console.log('Mock Redis: get called');
+    async get(key: string): Promise<string | null> {
+        console.log('Mock Redis: get called for key:', key);
         return null;
     }
 
-    async sMembers() {
-        console.log('Mock Redis: sMembers called');
+    async sMembers(key: string): Promise<string[]> {
+        console.log('Mock Redis: sMembers called for key:', key);
         return [];
     }
 
-    on() {
+    on(event: string, listener: (...args: unknown[]) => void): MockRedisClient {
+        console.log('Mock Redis: event listener attached for', event);
         return this;
     }
 }
 
+type RedisClient = RedisClientType | MockRedisClient;
+
 export class RedisConnection {
-    private client: RedisClientType | MockRedisClient;
+    private client: RedisClient;
     private isConnected: boolean = false;
     private connectionPromise: Promise<void> | null = null;
     private connectionUrl: string;
@@ -53,7 +56,7 @@ export class RedisConnection {
 
         // Use mock client during build or if URL is invalid
         if (this.shouldUseMock() || !this.isValidRedisUrl(this.connectionUrl)) {
-            this.client = new MockRedisClient() as any;
+            this.client = new MockRedisClient();
             this.isMock = true;
             console.log('Using mock Redis client for build');
         } else {
@@ -78,7 +81,7 @@ export class RedisConnection {
         this.connectionPromise = (async () => {
             try {
                 console.log('Establishing Redis connection...');
-                await this.client.connect();
+                await (this.client as RedisClientType).connect();
                 this.isConnected = true;
                 console.log('Connected to Redis successfully');
             } catch (error) {
@@ -102,7 +105,7 @@ export class RedisConnection {
         }
 
         try {
-            await this.client.disconnect();
+            await (this.client as RedisClientType).disconnect();
             this.isConnected = false;
             this.connectionPromise = null;
             console.log('Disconnected from Redis successfully');
@@ -114,7 +117,7 @@ export class RedisConnection {
 
     getClient(): RedisClientType {
         if (this.isMock) {
-            return this.client as RedisClientType;
+            throw new Error('Cannot get real Redis client when using mock');
         }
         if (!this.isConnected) {
             throw new Error('Redis client is not connected. Call ensureConnected() first.');
@@ -214,7 +217,7 @@ export class RedisConnection {
 
         const realClient = this.client as RedisClientType;
 
-        realClient.on('error', (err) => {
+        realClient.on('error', (err: Error) => {
             console.error('Redis Client Error:', err);
             this.isConnected = false;
             this.connectionPromise = null;
