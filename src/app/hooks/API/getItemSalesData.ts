@@ -85,8 +85,9 @@ export default function useItemSalesData(itemType: string, itemCurrency: string,
 
     const fetchItemData = useCallback(async (itemName: string, currency: string): Promise<ApiResponse> => {
         try {
+            // UPDATED: Using App Router API endpoint
             const response = await fetch(
-                `/api/redis-item-data-fetcher?item=${encodeURIComponent(itemName)}&currency=${encodeURIComponent(currency)}&league=${encodeURIComponent(leagueName)}`
+                `/api/items?item=${encodeURIComponent(itemName)}&currency=${encodeURIComponent(currency)}&league=${encodeURIComponent(leagueName)}`
             );
 
             if (!response.ok) {

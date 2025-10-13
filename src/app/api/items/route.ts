@@ -1,7 +1,7 @@
-// redis-item-data-fetcher.ts - Refactored Version with Stock Filtering
-import {NextApiRequest, NextApiResponse} from 'next';
+// route.ts - Refactored Version with Stock Filtering
 import {redisConnection} from '@/app/hooks/API/redis_connection';
 import RedisDataFetcher from '@/app/hooks/API/RedisDataFetcher';
+import {NextRequest} from "next/server";
 
 // Define TypeScript interfaces
 interface PriceItem {
@@ -162,19 +162,20 @@ const processItemData = (rawData: RawRedisData): ProcessedItem[] => {
     return results;
 };
 
-// API Handler
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
-        return res.status(405).json({message: 'Method not allowed'});
-    }
+export async function GET(request: NextRequest) {
+    const {searchParams} = new URL(request.url);
+    const item = searchParams.get('item');
+    const currency = searchParams.get('currency');
+    const league = searchParams.get('league');
 
-    const {item, currency, league} = req.query;
-
-    if (!item || typeof item !== 'string' || !currency || typeof currency !== 'string' || !league || typeof league !== 'string') {
-        return res.status(400).json({
-            message: 'Bad Request',
-            error: 'The "item", "currency", and "league" parameters are required and must be strings'
-        });
+    if (!item || !currency || !league) {
+        return new Response(
+            JSON.stringify({
+                message: 'Bad Request',
+                error: 'The "item", "currency", and "league" parameters are required and must be strings'
+            }),
+            {status: 400, headers: {'Content-Type': 'application/json'}}
+        );
     }
 
     try {
@@ -195,18 +196,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return isRecent && hasStock && isCorrectLeague;
         });
 
-        res.status(200).json({
-            item: item,
-            currency: currency,
-            data: filteredData,
-            lastUpdated: new Date().toISOString(),
-            count: filteredData.length
-        });
+        return new Response(
+            JSON.stringify({
+                item: item,
+                currency: currency,
+                data: filteredData,
+                lastUpdated: new Date().toISOString(),
+                count: filteredData.length
+            }),
+            {status: 200, headers: {'Content-Type': 'application/json'}}
+        );
     } catch (error) {
         console.error('Error fetching data from Redis:', error);
-        res.status(500).json({
-            message: 'Failed to fetch data from Redis',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        return new Response(
+            JSON.stringify({
+                message: 'Failed to fetch data from Redis',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            }),
+            {status: 500, headers: {'Content-Type': 'application/json'}}
+        );
     }
 }

@@ -8,10 +8,9 @@ export class RedisConnection {
     private connectionUrl: string;
 
     constructor(url: string) {
-        console.log('Redis Client Connected:', fullUrl);
+
         this.connectionUrl = url;
         this.client = createClient({url}) as RedisClientType;
-
         this.setupEventListeners();
     }
 

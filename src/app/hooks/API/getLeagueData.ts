@@ -39,7 +39,8 @@ export default function useLeagueData() {
 
     const fetchLeagueData = useCallback(async (): Promise<League[]> => {
         try {
-            const response = await fetch('/api/redis-league-data-fetcher');
+            // UPDATED: Using App Router API endpoint
+            const response = await fetch('/api/leagues');
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
