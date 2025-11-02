@@ -1,31 +1,37 @@
 import Image from 'next/image';
+import {FALLBACK_FOSSIL_IMAGE, fossilImages} from './fossilImages';
 
 interface FossilImageProps {
     fossilName: string;
+    size?: number;
 }
 
-const FossilImage = ({fossilName}: FossilImageProps) => {
-    // Map fossil names to their image paths
-    const getImagePath = (name: string) => {
-        const fossilImages: Record<string, string> = {
-            'Primitive Chaotic': '/images/fossils/primitive-chaotic.png',
-            'Deft Fossil': '/images/fossils/deft.png',
-            // Add all other fossil images here
-        };
+export const FossilImage = ({
+                                fossilName,
+                                size = 24
+                            }: FossilImageProps) => {
+    // Normalize the fossil name to match your mapping
+    const normalizedFossilName = fossilName
+        .split(' ')
+        .map(word => {
+            // Capitalize first letter of each word
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join(' ');
 
-        return fossilImages[name] || '/images/fossils/default.png';
-    };
+    const imageSrc = fossilImages[normalizedFossilName] || FALLBACK_FOSSIL_IMAGE;
 
     return (
-        <div className="w-8 h-8 relative">
-            <Image
-                src={getImagePath(fossilName)}
-                alt={fossilName}
-                fill
-                className="object-contain"
-            />
-        </div>
+        <Image
+            src={imageSrc}
+            alt={fossilName}
+            width={size}
+            height={size}
+            className="mr-2"
+            onError={(e) => {
+                console.error(`Image failed to load for: ${fossilName}`, imageSrc);
+                (e.target as HTMLImageElement).src = FALLBACK_FOSSIL_IMAGE;
+            }}
+        />
     );
 };
-
-export default FossilImage;

@@ -2,16 +2,15 @@
 import {useEffect, useMemo, useState} from 'react';
 import ChaosDivineToggleButtonWithImage from "../ChaosDivineToggleButton";
 import useItemSalesData from '../../hooks/API/getItemSalesData';
-import {EssenceImage} from "@/app/components/essence/EssenceImage";
+import {FossilImage} from "@/app/components/fossils/FossilImage";
 // Import the actual League type from the hook
 import type {League} from '../../hooks/API/getLeagueData';
 import useLeagueData from '../../hooks/API/getLeagueData';
 
-const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void }) => {
-    console.log('⚠️ COMPONENT FUNCTION EXECUTING ⚠️');
+const FossilCalculator = ({onNavigate}: { onNavigate: (page: string) => void }) => {
+    console.log('⚠️ FOSSIL COMPONENT FUNCTION EXECUTING ⚠️');
     const [currency, setCurrency] = useState<'Divine' | 'Chaos'>('Divine');
-    const [expandedEssences, setExpandedEssences] = useState<Record<string, boolean>>({});
-    const [selectedEssenceType, setSelectedEssenceType] = useState<string>('');
+    const [expandedFossils, setExpandedFossils] = useState<Record<string, boolean>>({});
     const [debugMode, setDebugMode] = useState(false);
     const [leagues, setLeagues] = useState<League[]>([]);
     const [selectedLeague, setSelectedLeague] = useState('Mercenaries');
@@ -38,17 +37,17 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         isConnected,
         isLoading,
         error
-    } = useItemSalesData('essence', currency, selectedLeague);
+    } = useItemSalesData('fossil', currency, selectedLeague);
 
     // Debug function to toggle debug info
     const toggleDebug = () => {
         setDebugMode(prev => !prev);
     };
 
-    const toggleEssenceExpansion = (essenceName: string) => {
-        setExpandedEssences(prev => ({
+    const toggleFossilExpansion = (fossilName: string) => {
+        setExpandedFossils(prev => ({
             ...prev,
-            [essenceName]: !prev[essenceName]
+            [fossilName]: !prev[fossilName]
         }));
     };
 
@@ -67,72 +66,33 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
         setCurrency(newCurrency);
     };
 
-    const handleEssenceTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedEssenceType(e.target.value);
-    };
-
     const handleLeagueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedLeague(e.target.value);
     };
 
-    const getUniqueEssenceNames = useMemo(() => {
+    const getUniqueFossilNames = useMemo(() => {
         const trades = currency === 'Divine' ? divineTrades : chaosTrades;
-        console.log('trades data:', trades);
-        console.log('first trade sample:', trades[0]);
+        console.log('fossil trades', trades);
 
-        // Get all unique essence names from trades with proper filtering
-        const essenceNames = [...new Set(
-            trades.map(trade => {
-                console.log(`Trade typeLine: "${trade.typeLine}"`);
-                return trade.typeLine;
-            }).filter((name): name is string => {
-                const isValid = Boolean(name && name.trim() !== '');
-                if (!isValid) {
-                    console.log('Filtered out empty typeLine');
-                }
-                return isValid;
-            })
-        )];
+        // Get all unique fossil names from trades
+        const fossilNames = [...new Set(
+            trades.map(trade => trade.typeLine)
+        )].filter((name): name is string => Boolean(name));
 
-        console.info('Unique essence names before filtering:', essenceNames);
+        console.info('fossilNames', fossilNames);
 
-        // Apply filters if selected
-        let filteredNames = essenceNames;
+        return fossilNames.sort((a, b) => a.localeCompare(b));
+    }, [currency, divineTrades, chaosTrades]);
 
-        if (selectedEssenceType === 'SHRIEKING') {
-            filteredNames = essenceNames.filter(name => name.toUpperCase().includes('SHRIEKING'));
-        } else if (selectedEssenceType === 'DEAFENING') {
-            filteredNames = essenceNames.filter(name => name.toUpperCase().includes('DEAFENING'));
-        } else if (selectedEssenceType === 'ELEVATED') {
-            filteredNames = essenceNames.filter(name =>
-                !name.toUpperCase().includes('SHRIEKING') &&
-                !name.toUpperCase().includes('DEAFENING')
-            );
-        }
-
-        const sortedNames = filteredNames.sort((a, b) => a.localeCompare(b));
-        console.info('Final essence names:', sortedNames);
-
-        return sortedNames;
-    }, [currency, divineTrades, chaosTrades, selectedEssenceType]);
-
-    const getTradesForEssence = (essenceName: string) => {
+    const getTradesForFossil = (fossilName: string) => {
         const trades = currency === 'Divine' ? divineTrades : chaosTrades;
 
-        // Filter trades by essence name with null check
-        const essenceTrades = trades.filter(trade => {
-            const matches = trade.typeLine === essenceName;
-            if (matches && (!trade.typeLine || trade.typeLine.trim() === '')) {
-                console.warn('Found trade with empty typeLine that matches essenceName:', essenceName, trade);
-            }
-            return matches;
-        });
-
-        console.log(`Found ${essenceTrades.length} trades for essence: ${essenceName}`);
+        // Filter trades by fossil name
+        const fossilTrades = trades.filter(trade => trade.typeLine === fossilName);
 
         // Return a sorted copy of the array
-        return [...essenceTrades].sort((a, b) => {
-            // Your existing sorting logic here
+        return [...fossilTrades].sort((a, b) => {
+            // Extract price per unit from note field
             const extractPricePerUnit = (note: string): number => {
                 if (!note) return Infinity;
 
@@ -219,7 +179,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
 
     if (isLoading || isLeagueLoading) {
         return <div className="bg-gray-900 text-gray-200 min-h-screen p-4 flex items-center justify-center">
-            Loading trade data...
+            Loading fossil trade data...
         </div>;
     }
 
@@ -228,13 +188,13 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
             <header className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
                 <h1 className="text-2xl text-yellow-500 font-bold">GAINS OF EXILE</h1>
                 <div className="flex space-x-4">
-                    <button className="px-2 py-1 bg-gray-500 rounded">ESSENCES</button>
                     <button
                         className="px-2 py-1 bg-gray-800 rounded"
-                        onClick={() => onNavigate('fossils')}
+                        onClick={() => onNavigate('essences')}
                     >
-                        FOSSILS
+                        ESSENCES
                     </button>
+                    <button className="px-2 py-1 bg-gray-500 rounded">FOSSILS</button>
                     <button className="px-2 py-1 bg-gray-800 rounded">CATALYSTS</button>
                     <button className="px-2 py-1 bg-gray-800 rounded">OILS</button>
                     <button className="px-2 py-1 bg-gray-800 rounded">DELIRIUM ORBS</button>
@@ -242,18 +202,6 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
                     <button className="px-2 py-1 bg-gray-800 rounded">EMBLEMS</button>
                 </div>
                 <div className="flex space-x-2">
-                    <select
-                        className="px-2 py-1 bg-gray-800"
-                        name="essenceType"
-                        id="essenceType"
-                        value={selectedEssenceType}
-                        onChange={handleEssenceTypeChange}
-                    >
-                        <option value="">All Essences</option>
-                        <option value="ELEVATED">Elevated</option>
-                        <option value="DEAFENING">Deafening</option>
-                        <option value="SHRIEKING">Shrieking</option>
-                    </select>
                     <ChaosDivineToggleButtonWithImage
                         currency={currency}
                         onToggle={handleCurrencyChange}
@@ -338,31 +286,31 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
                             </span>
                         </h2>
 
-                        {getUniqueEssenceNames.length === 0 ? (
+                        {getUniqueFossilNames.length === 0 ? (
                             <div className="text-gray-400 py-4">
-                                No {currency} trades available for selected essence types.
+                                No {currency} trades available for fossils.
                                 {!isConnected &&
                                     <div className="text-red-400">(Connection lost - attempting to reconnect...)</div>}
                             </div>
                         ) : (
-                            getUniqueEssenceNames.map(essenceName => {
-                                const trades = getTradesForEssence(essenceName);
+                            getUniqueFossilNames.map(fossilName => {
+                                const trades = getTradesForFossil(fossilName);
                                 return (
-                                    <div key={essenceName} className="mb-4">
+                                    <div key={fossilName} className="mb-4">
                                         <h3
                                             className="text-md font-semibold mb-2 cursor-pointer flex items-center"
-                                            onClick={() => toggleEssenceExpansion(essenceName)}
+                                            onClick={() => toggleFossilExpansion(fossilName)}
                                         >
-                                            <EssenceImage essenceName={essenceName}/>
-                                            <span className="ml-2">{essenceName}</span>
+                                            <FossilImage fossilName={fossilName}/>
+                                            <span className="ml-2">{fossilName}</span>
                                             <span className="ml-2 text-sm text-gray-400">
                                                 ({trades.length} trades)
                                             </span>
                                             <span className="ml-auto">
-                                                {expandedEssences[essenceName] ? '▼' : '▶'}
+                                                {expandedFossils[fossilName] ? '▼' : '▶'}
                                             </span>
                                         </h3>
-                                        {expandedEssences[essenceName] && trades.length > 0 && (
+                                        {expandedFossils[fossilName] && trades.length > 0 && (
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-sm border-separate border-spacing-0">
                                                     <thead className="text-gray-400 bg-gray-800 sticky top-0">
@@ -378,7 +326,7 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
                                                     </thead>
                                                     <tbody>
                                                     {trades.map((trade, index) => (
-                                                        <tr key={`${essenceName}-${index}`}
+                                                        <tr key={`${fossilName}-${index}`}
                                                             className="hover:bg-gray-800 even:bg-gray-850">
                                                             <td className="px-4 py-2 border-t border-gray-700">{trade.note}</td>
                                                             <td className="px-4 py-2 border-t border-gray-700">
@@ -415,4 +363,4 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
     );
 };
 
-export default EssenceCalculator;
+export default FossilCalculator;
