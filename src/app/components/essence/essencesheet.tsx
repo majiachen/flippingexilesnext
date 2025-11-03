@@ -6,6 +6,7 @@ import {EssenceImage} from "@/app/components/essence/EssenceImage";
 // Import the actual League type from the hook
 import type {League} from '../../hooks/API/getLeagueData';
 import useLeagueData from '../../hooks/API/getLeagueData';
+import {getEssenceOrder} from "@/app/components/essence/essenceImages";
 
 const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void }) => {
     console.log('⚠️ COMPONENT FUNCTION EXECUTING ⚠️');
@@ -78,20 +79,12 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
     const getUniqueEssenceNames = useMemo(() => {
         const trades = currency === 'Divine' ? divineTrades : chaosTrades;
         console.log('trades data:', trades);
-        console.log('first trade sample:', trades[0]);
 
         // Get all unique essence names from trades with proper filtering
         const essenceNames = [...new Set(
-            trades.map(trade => {
-                console.log(`Trade typeLine: "${trade.typeLine}"`);
-                return trade.typeLine;
-            }).filter((name): name is string => {
-                const isValid = Boolean(name && name.trim() !== '');
-                if (!isValid) {
-                    console.log('Filtered out empty typeLine');
-                }
-                return isValid;
-            })
+            trades.map(trade => trade.typeLine).filter((name): name is string =>
+                Boolean(name && name.trim() !== '')
+            )
         )];
 
         console.info('Unique essence names before filtering:', essenceNames);
@@ -110,8 +103,14 @@ const EssenceCalculator = ({onNavigate}: { onNavigate: (page: string) => void })
             );
         }
 
-        const sortedNames = filteredNames.sort((a, b) => a.localeCompare(b));
-        console.info('Final essence names:', sortedNames);
+        // Sort strictly by custom essence order
+        const sortedNames = [...filteredNames].sort((a, b) => {
+            const orderA = getEssenceOrder(a);
+            const orderB = getEssenceOrder(b);
+            return orderA - orderB;
+        });
+
+        console.info('Final essence names in custom order:', sortedNames);
 
         return sortedNames;
     }, [currency, divineTrades, chaosTrades, selectedEssenceType]);
